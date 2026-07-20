@@ -13,16 +13,12 @@ from .factory import ModelFactory
 
 
 def utc_now():
-    """
-    Return the current UTC datetime as a naive datetime, since the
-    issued_at column below is not tz-aware.
-    """
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    pass
 
 
 @compiles(sa.types.BigInteger, 'sqlite')
 def compile_big_integer(element, compiler, **kw):
-    return 'INTEGER'
+    pass
 
 
 class NoChangesAttribute(Exception):
@@ -34,45 +30,11 @@ class TransactionBase:
 
     @property
     def entity_names(self):
-        """
-        Return a list of entity names that changed during this transaction.
-        Raises a NoChangesAttribute exception if the 'changes' column does
-        not exist, most likely because TransactionChangesPlugin is not enabled.
-        """
-        if hasattr(self, 'changes'):
-            return [changes.entity_name for changes in self.changes]
-        else:
-            raise NoChangesAttribute()
+        pass
 
     @property
     def changed_entities(self):
-        """
-        Return all changed entities for this transaction log entry.
-
-        Entities are returned as a dict where keys are entity classes and
-        values lists of entitites that changed in this transaction.
-        """
-        manager = self.__versioning_manager__
-        tuples = set(manager.version_class_map.items())
-        entities = {}
-
-        session = sa.orm.object_session(self)
-
-        for class_, version_class in tuples:
-            try:
-                if class_.__name__ not in self.entity_names:
-                    continue
-            except NoChangesAttribute:
-                pass
-
-            tx_column = manager.option(class_, 'transaction_column_name')
-
-            entities[version_class] = (
-                session.query(version_class).filter(
-                    getattr(version_class, tx_column) == self.id
-                )
-            ).all()
-        return entities
+        pass
 
 
 procedure_sql = """
@@ -89,26 +51,7 @@ LANGUAGE plpgsql
 
 
 def create_triggers(cls):
-    sa.event.listen(
-        cls.__table__,
-        'after_create',
-        sa.schema.DDL(
-            procedure_sql.format(
-                temporary_transaction_sql=CreateTemporaryTransactionTableSQL(),
-                insert_temporary_transaction_sql=(
-                    InsertTemporaryTransactionSQL(transaction_id_values='NEW.id')
-                ),
-            )
-        ),
-    )
-    sa.event.listen(
-        cls.__table__, 'after_create', sa.schema.DDL(str(TransactionTriggerSQL(cls)))
-    )
-    sa.event.listen(
-        cls.__table__,
-        'after_drop',
-        sa.schema.DDL('DROP FUNCTION IF EXISTS transaction_temp_table_generator()'),
-    )
+    pass
 
 
 class TransactionFactory(ModelFactory):
@@ -118,58 +61,4 @@ class TransactionFactory(ModelFactory):
         self.remote_addr = remote_addr
 
     def create_class(self, manager):
-        """
-        Create Transaction class.
-        """
-
-        class Transaction(manager.declarative_base, TransactionBase):
-            __tablename__ = 'transaction'
-            __versioning_manager__ = manager
-
-            id = sa.Column(
-                sa.types.BigInteger,
-                sa.schema.Sequence('transaction_id_seq'),
-                primary_key=True,
-                autoincrement=True,
-            )
-
-            if self.remote_addr:
-                remote_addr = sa.Column(sa.String(50))
-
-            if manager.user_cls:
-                user_cls = manager.user_cls
-                Base = manager.declarative_base
-                registry = Base.registry._class_registry
-
-                if isinstance(user_cls, str):
-                    try:
-                        user_cls = registry[user_cls]
-                    except KeyError:
-                        raise ImproperlyConfigured(
-                            'Could not build relationship between Transaction'
-                            f' and {user_cls}. {user_cls} was not found in declarative class '
-                            'registry. Either configure VersioningManager to '
-                            'use different user class or disable this '
-                            'relationship '
-                        ) from None
-
-                user_id = sa.Column(
-                    sa.inspect(user_cls).primary_key[0].type,
-                    sa.ForeignKey(sa.inspect(user_cls).primary_key[0]),
-                    index=True,
-                )
-
-                user = sa.orm.relationship(user_cls)
-
-            def __repr__(self):
-                fields = ['id', 'issued_at', 'user']
-                field_values = ', '.join(
-                    f'{field}={getattr(self, field)!r}'
-                    for field in fields
-                    if hasattr(self, field)
-                )
-                return f'<Transaction {field_values}>'
-
-        if manager.options['native_versioning']:
-            create_triggers(Transaction)
-        return Transaction
+        pass

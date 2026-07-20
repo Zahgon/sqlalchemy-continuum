@@ -10,23 +10,7 @@ class VersionExpressionReflector(sa.sql.visitors.ReplacingCloningVisitor):
         self.relationship = relationship
 
     def replace(self, column):
-        if not isinstance(column, sa.Column):
-            return
-        try:
-            table = version_table(column.table)
-        except KeyError:
-            reflected_column = column
-        else:
-            reflected_column = table.c[column.name]
-            if (
-                column in self.relationship.local_columns
-                and table == self.parent.__table__
-            ):
-                reflected_column = bindparam(
-                    column.key, getattr(self.parent, column.key)
-                )
-
-        return reflected_column
+        pass
 
     def __call__(self, expr):
         return self.traverse(expr)

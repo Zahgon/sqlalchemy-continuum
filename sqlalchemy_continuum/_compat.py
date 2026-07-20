@@ -1,21 +1,3 @@
-"""
-Compatibility module containing functions ported from SQLAlchemy-Utils.
-
-This module contains the specific SQLAlchemy-Utils functions that SQLAlchemy-Continuum
-actually uses, eliminating the need for the full SQLAlchemy-Utils dependency.
-
-Functions ported:
-- ImproperlyConfigured (exception)
-- get_declarative_base()
-- naturally_equivalent()
-- get_columns()
-- get_primary_keys()
-- identity()
-- get_column_key()
-- has_changes()
-- JSONType
-- generic_relationship()
-"""
 
 import json
 from collections.abc import Iterable
@@ -30,7 +12,6 @@ from sqlalchemy.orm.interfaces import MapperProperty, PropComparator
 from sqlalchemy.orm.session import _state_session
 from sqlalchemy.util import set_creation_order
 
-# PostgreSQL JSON support with fallback
 try:
     from sqlalchemy.dialects.postgresql import JSON
 
@@ -39,33 +20,16 @@ except ImportError:
     has_postgres_json = False
 
 
-# ==============================================================================
-# EXCEPTIONS
-# ==============================================================================
 
 
 class ImproperlyConfigured(Exception):
-    """
-    SQLAlchemy-Continuum is improperly configured; normally due to usage of
-    a utility that depends on a missing library.
-    """
+    pass
 
 
-# ==============================================================================
-# SIMPLE UTILITY FUNCTIONS
-# ==============================================================================
 
 
 def get_declarative_base(model):
-    """
-    Returns the declarative base for given model class.
-
-    :param model: SQLAlchemy declarative model
-    """
-    for parent in model.__bases__:
-        if hasattr(parent, 'metadata'):
-            return get_declarative_base(parent)
-    return model
+    pass
 
 
 def naturally_equivalent(obj, obj2):
@@ -96,9 +60,6 @@ def naturally_equivalent(obj, obj2):
     return True
 
 
-# ==============================================================================
-# CORE ORM UTILITY FUNCTIONS
-# ==============================================================================
 
 
 def get_columns(mixed):
@@ -165,70 +126,11 @@ def get_primary_keys(mixed):
 
 
 def identity(obj_or_class):
-    """
-    Return the identity of given sqlalchemy declarative model class or instance
-    as a tuple. This differs from obj._sa_instance_state.identity in a way that
-    it always returns the identity even if object is still in transient state (
-    new object that is not yet persisted into database). Also for classes it
-    returns the identity attributes.
-
-    ::
-
-        from sqlalchemy import inspect
-        from sqlalchemy_continuum._compat import identity
-
-        user = User(name='John Matrix')
-        session.add(user)
-        identity(user)  # None
-        inspect(user).identity  # None
-
-        session.flush()  # User now has id but is still in transient state
-
-        identity(user)  # (1,)
-        inspect(user).identity  # None
-
-        session.commit()
-
-        identity(user)  # (1,)
-        inspect(user).identity  # (1, )
-
-    You can also use identity for classes::
-
-        identity(User)  # (User.id, )
-
-    :param obj: SQLAlchemy declarative model object
-    """
-    return tuple(
-        getattr(obj_or_class, column_key)
-        for column_key in get_primary_keys(obj_or_class).keys()
-    )
+    pass
 
 
 def get_column_key(model, column):
-    """
-    Return the key for given column in given model.
-
-    :param model: SQLAlchemy declarative model object
-
-    ::
-
-        class User(Base):
-            __tablename__ = 'user'
-            id = sa.Column(sa.Integer, primary_key=True)
-            name = sa.Column('_name', sa.String)
-
-        get_column_key(User, User.__table__.c._name)  # 'name'
-    """
-    mapper = sa.inspect(model)
-    try:
-        return mapper.get_property_by_column(column).key
-    except sa.orm.exc.UnmappedColumnError:
-        for key, c in mapper.columns.items():
-            if c.name == column.name and c.table is column.table:
-                return key
-    raise sa.orm.exc.UnmappedColumnError(
-        f'No column {column} is configured on mapper {mapper}...'
-    )
+    pass
 
 
 def has_changes(obj, attrs=None, exclude=None):
@@ -285,9 +187,6 @@ def has_changes(obj, attrs=None, exclude=None):
         )
 
 
-# ==============================================================================
-# HELPER FUNCTIONS
-# ==============================================================================
 
 
 def _get_class_registry(class_):
@@ -301,48 +200,18 @@ def _get_class_registry(class_):
         return class_._decl_class_registry
 
 
-# ==============================================================================
-# CUSTOM SQLALCHEMY TYPES
-# ==============================================================================
 
-# PostgreSQL JSON fallback for older SQLAlchemy versions
 if not has_postgres_json:
 
     class PostgresJSONType(sa.types.UserDefinedType):
-        """
-        JSON type for PostgreSQL when native JSON support is not available.
-        """
 
         def get_col_spec(self):
-            return 'json'
+            pass
 
     ischema_names['json'] = PostgresJSONType
 
 
 class JSONType(sa.types.TypeDecorator):
-    """
-    JSONType offers way of saving JSON data structures to database. On
-    PostgreSQL the underlying implementation of this data type is 'json' while
-    on other databases its simply 'text'.
-
-    ::
-
-        from sqlalchemy_continuum._compat import JSONType
-
-        class Product(Base):
-            __tablename__ = 'product'
-            id = sa.Column(sa.Integer, autoincrement=True)
-            name = sa.Column(sa.Unicode(50))
-            details = sa.Column(JSONType)
-
-        product = Product()
-        product.details = {
-            'color': 'red',
-            'type': 'car',
-            'max-speed': '400 mph'
-        }
-        session.commit()
-    """
 
     impl = sa.UnicodeText
     hashable = False
@@ -352,42 +221,18 @@ class JSONType(sa.types.TypeDecorator):
         super().__init__(*args, **kwargs)
 
     def load_dialect_impl(self, dialect):
-        if dialect.name == 'postgresql':
-            # Use the native JSON type.
-            if has_postgres_json:
-                return dialect.type_descriptor(JSON())
-            else:
-                return dialect.type_descriptor(PostgresJSONType())
-        else:
-            return dialect.type_descriptor(self.impl)
+        pass
 
     def process_bind_param(self, value, dialect):
-        if dialect.name == 'postgresql' and has_postgres_json:
-            return value
-        if value is not None:
-            value = json.dumps(value)
-        return value
+        pass
 
     def process_result_value(self, value, dialect):
-        if dialect.name == 'postgresql':
-            return value
-        if value is not None:
-            value = json.loads(value)
-        return value
+        pass
 
 
-# ==============================================================================
-# GENERIC RELATIONSHIP IMPLEMENTATION
-# ==============================================================================
 
 
 class GenericAttributeImpl(attributes.ScalarAttributeImpl):
-    """
-    Custom attribute implementation for generic relationships.
-
-    Handles the complex logic of resolving relationships based on discriminator
-    and identity values, supporting lazy loading through database queries.
-    """
 
     def __init__(self, *args, **kwargs):
         """
@@ -400,7 +245,6 @@ class GenericAttributeImpl(attributes.ScalarAttributeImpl):
         Required by AttributeImpl: (class, key, default_function, dispatch)
         Setting None as default_function here.
         """
-        # Adjust for SQLAlchemy version change
         sqlalchemy_version = tuple(map(int, sa.__version__.split('.')))
         if sqlalchemy_version >= (2, 0, 22):
             args = (*args[:2], None, *args[2:])
@@ -411,27 +255,20 @@ class GenericAttributeImpl(attributes.ScalarAttributeImpl):
         if self.key in dict_:
             return dict_[self.key]
 
-        # Retrieve the session bound to the state in order to perform
-        # a lazy query for the attribute.
         session = _state_session(state)
         if session is None:
-            # State is not bound to a session; we cannot proceed.
             return None
 
-        # Find class for discriminator.
-        # TODO: Perhaps optimize with some sort of lookup?
         discriminator = self.get_state_discriminator(state)
         target_class = _get_class_registry(state.class_).get(discriminator)
 
         if target_class is None:
-            # Unknown discriminator; return nothing.
             return None
 
         id = self.get_state_id(state)
 
         target = session.get(target_class, id)
 
-        # Return found (or not found) target.
         return target
 
     def get_state_discriminator(self, state):
@@ -442,7 +279,6 @@ class GenericAttributeImpl(attributes.ScalarAttributeImpl):
             return state.attrs[discriminator.key].value
 
     def get_state_id(self, state):
-        # Lookup row with the discriminator and id.
         return tuple(state.attrs[id.key].value for id in self.parent_token.id)
 
     def set(
@@ -454,42 +290,10 @@ class GenericAttributeImpl(attributes.ScalarAttributeImpl):
         check_old=None,
         pop=False,
     ):
-        # Set us on the state.
-        dict_[self.key] = initiator
-
-        if initiator is None:
-            # Nullify relationship args
-            for id in self.parent_token.id:
-                dict_[id.key] = None
-            dict_[self.parent_token.discriminator.key] = None
-        else:
-            # Get the primary key of the initiator and ensure we
-            # can support this assignment.
-            class_ = type(initiator)
-            mapper = class_mapper(class_)
-
-            pk = mapper.identity_key_from_instance(initiator)[1]
-
-            # Set the identifier and the discriminator.
-            discriminator = class_.__name__
-
-            for index, id in enumerate(self.parent_token.id):
-                dict_[id.key] = pk[index]
-            dict_[self.parent_token.discriminator.key] = discriminator
+        pass
 
 
 class GenericRelationshipProperty(MapperProperty):
-    """
-    A generic form of the relationship property.
-
-    Creates a 1 to many relationship between the parent model
-    and any other models using a discriminator (the table name).
-
-    :param discriminator:
-        Field to discriminate which model we are referring to.
-    :param id:
-        Field to point to the model we are referring to.
-    """
 
     def __init__(self, discriminator, id, doc=None):
         super().__init__()
@@ -502,37 +306,10 @@ class GenericRelationshipProperty(MapperProperty):
         set_creation_order(self)
 
     def _column_to_property(self, column):
-        if isinstance(column, hybrid_property):
-            attr_key = column.__name__
-            for key, attr in self.parent.all_orm_descriptors.items():
-                if key == attr_key:
-                    return attr
-        else:
-            for attr in self.parent.attrs.values():
-                if isinstance(attr, ColumnProperty):
-                    if attr.columns[0].name == column.name:
-                        return attr
+        pass
 
     def init(self):
-        def convert_strings(column):
-            if isinstance(column, str):
-                return self.parent.columns[column]
-            return column
-
-        self._discriminator_col = convert_strings(self._discriminator_col)
-        self._id_cols = convert_strings(self._id_cols)
-
-        if isinstance(self._id_cols, Iterable):
-            self._id_cols = list(map(convert_strings, self._id_cols))
-        else:
-            self._id_cols = [self._id_cols]
-
-        self.discriminator = self._column_to_property(self._discriminator_col)
-
-        if self.discriminator is None:
-            raise ImproperlyConfigured('Could not find discriminator descriptor.')
-
-        self.id = list(map(self._column_to_property, self._id_cols))
+        pass
 
     class Comparator(PropComparator):
         def __init__(self, prop, parentmapper):
@@ -551,50 +328,11 @@ class GenericRelationshipProperty(MapperProperty):
             return ~(self == other)
 
         def is_type(self, other):
-            mapper = sa.inspect(other)
-            # Iterate through the weak sequence in order to get the actual
-            # mappers
-            class_names = [other.__name__]
-            class_names.extend(
-                [submapper.class_.__name__ for submapper in mapper._inheriting_mappers]
-            )
-
-            return self.property._discriminator_col.in_(class_names)
+            pass
 
     def instrument_class(self, mapper):
-        attributes.register_attribute(
-            mapper.class_,
-            self.key,
-            comparator=self.Comparator(self, mapper),
-            parententity=mapper,
-            doc=self.doc,
-            impl_class=GenericAttributeImpl,
-            parent_token=self,
-        )
+        pass
 
 
 def generic_relationship(*args, **kwargs):
-    """
-    Creates a generic relationship that can refer to any table using
-    a discriminator column and a foreign key.
-
-    ::
-
-        from sqlalchemy_continuum._compat import generic_relationship
-
-        class Activity(Base):
-            __tablename__ = 'activity'
-            id = sa.Column(sa.Integer, primary_key=True)
-
-            # Generic relationship columns
-            object_type = sa.Column(sa.String)
-            object_id = sa.Column(sa.Integer)
-
-            # The generic relationship
-            object = generic_relationship(object_type, object_id)
-
-    :param discriminator: Column or column name for discriminator
-    :param id: Column, column name, or list of columns for foreign key
-    :param doc: Documentation string
-    """
-    return GenericRelationshipProperty(*args, **kwargs)
+    pass

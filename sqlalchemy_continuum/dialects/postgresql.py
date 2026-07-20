@@ -92,9 +92,7 @@ WHERE
 
 
 def uses_property_mod_tracking(manager):
-    return any(
-        isinstance(plugin, PropertyModTrackerPlugin) for plugin in manager.plugins
-    )
+    pass
 
 
 class SQLConstruct:
@@ -124,67 +122,38 @@ class SQLConstruct:
 
     @property
     def table_name(self):
-        if self.table.schema:
-            return f'{self.table.schema}."{self.table.name}"'
-        else:
-            return '"' + self.table.name + '"'
+        pass
 
     @property
     def transaction_table_name(self):
-        if self.table.schema:
-            return f'{self.table.schema}.transaction'
-        else:
-            return 'transaction'
+        pass
 
     @property
     def temporary_transaction_table_name(self):
-        return 'temporary_transaction'
+        pass
 
     @property
     def version_table_name(self):
-        version_table_name = self.version_table_name_format % self.table.name
-        if self.table.schema:
-            version_table_name = f'{self.table.schema}.{version_table_name}'
-        return version_table_name
+        pass
 
     @classmethod
     def for_manager(self, manager, cls):
-        strategy = manager.option(cls, 'strategy')
-        operation_type_column = manager.option(cls, 'operation_type_column_name')
-        excluded_columns = [
-            c.name
-            for c in sa.inspect(cls).columns
-            if manager.is_excluded_column(cls, c)
-        ]
-        return self(
-            update_validity_for_tables=(
-                sa.inspect(cls).tables if strategy == 'validity' else []
-            ),
-            version_table_name_format=manager.option(cls, 'table_name'),
-            operation_type_column_name=operation_type_column,
-            transaction_column_name=manager.option(cls, 'transaction_column_name'),
-            end_transaction_column_name=manager.option(
-                cls, 'end_transaction_column_name'
-            ),
-            use_property_mod_tracking=uses_property_mod_tracking(manager),
-            excluded_columns=excluded_columns,
-            table=cls.__table__,
-        )
+        pass
 
     @property
     def columns(self):
-        return [c for c in self.table.c if c.name not in self.excluded_columns]
+        pass
 
     @property
     def columns_without_pks(self):
-        return [c for c in self.columns if not c.primary_key]
+        pass
 
     @property
     def pk_columns(self):
-        return [c for c in self.columns if c.primary_key]
+        pass
 
     def copy_args(self):
-        return {k: v for k, v in self.__dict__.items() if not k.startswith('__')}
+        pass
 
 
 class UpsertSQL(SQLConstruct):
@@ -202,36 +171,22 @@ class UpsertSQL(SQLConstruct):
             setattr(self, key, getattr(self, f'build_{key}')())
 
     def build_column_names(self):
-        column_names = [f'"{c.name}"' for c in self.columns]
-        if self.use_property_mod_tracking:
-            column_names += [f'{c.name}_mod' for c in self.columns_without_pks]
-        return column_names
+        pass
 
     def build_primary_key_criteria(self):
-        return [f'"{c.name}" = NEW."{c.name}"' for c in self.columns if c.primary_key]
+        pass
 
     def build_update_values(self):
-        parent_columns = [f'"{c.name}" = NEW."{c.name}"' for c in self.columns]
-        mod_columns = []
-        if self.use_property_mod_tracking:
-            mod_columns = [
-                f'{c.name}_mod = {c.name}_mod OR OLD."{c.name}" IS DISTINCT FROM NEW."{c.name}"'
-                for c in self.columns_without_pks
-            ]
-
-        return [f'{self.operation_type_column_name} = 1'] + parent_columns + mod_columns
+        pass
 
     def build_insert_values(self):
-        values = self.build_values()
-        if self.use_property_mod_tracking:
-            values += self.build_mod_tracking_values()
-        return values
+        pass
 
     def build_values(self):
-        return [f'NEW."{c.name}"' for c in self.columns]
+        pass
 
     def build_mod_tracking_values(self):
-        return []
+        pass
 
     def __str__(self):
         params = {
@@ -252,39 +207,36 @@ class DeleteUpsertSQL(UpsertSQL):
     operation_type = 2
 
     def build_primary_key_criteria(self):
-        return [f'"{c.name}" = OLD."{c.name}"' for c in self.pk_columns]
+        pass
 
     def build_mod_tracking_values(self):
-        return ['True'] * len(self.columns_without_pks)
+        pass
 
     def build_update_values(self):
-        return [f'"{c.name}" = OLD."{c.name}"' for c in self.columns]
+        pass
 
     def build_values(self):
-        return [f'OLD."{c.name}"' for c in self.columns]
+        pass
 
 
 class InsertUpsertSQL(UpsertSQL):
     operation_type = 0
 
     def build_mod_tracking_values(self):
-        return ['True'] * len(self.columns_without_pks)
+        pass
 
 
 class UpdateUpsertSQL(UpsertSQL):
     operation_type = 1
 
     def build_mod_tracking_values(self):
-        return [
-            f'OLD."{c.name}" IS DISTINCT FROM NEW."{c.name}"'
-            for c in self.columns_without_pks
-        ]
+        pass
 
 
 class ValiditySQL(SQLConstruct):
     @property
     def primary_key_criteria(self):
-        return ' AND '.join(f'"{c.name}" = NEW."{c.name}"' for c in self.pk_columns)
+        pass
 
     def __str__(self):
         params = {
@@ -308,13 +260,11 @@ class UpdateValiditySQL(ValiditySQL):
 class DeleteValiditySQL(ValiditySQL):
     @property
     def primary_key_criteria(self):
-        return ' AND '.join(f'{c.name} = OLD."{c.name}"' for c in self.pk_columns)
+        pass
 
 
 def get_validity_sql(class_, tables, params):
-    params = params.copy()
-    del params['table']
-    return ''.join(str(class_(table, **params)) for table in tables)
+    pass
 
 
 class CreateTriggerSQL(SQLConstruct):
@@ -383,10 +333,7 @@ class TransactionTriggerSQL:
 
     @property
     def transaction_table_name(self):
-        if self.table.schema:
-            return f'{self.table.schema}.transaction'
-        else:
-            return 'transaction'
+        pass
 
     def __str__(self):
         return temp_transaction_trigger_sql.format(
@@ -395,23 +342,7 @@ class TransactionTriggerSQL:
 
 
 def create_versioning_trigger_listeners(manager, cls):
-    sa.event.listen(
-        cls.__table__,
-        'after_create',
-        sa.schema.DDL(str(CreateTriggerFunctionSQL.for_manager(manager, cls))),
-    )
-    sa.event.listen(
-        cls.__table__,
-        'after_create',
-        sa.schema.DDL(str(CreateTriggerSQL.for_manager(manager, cls))),
-    )
-    sa.event.listen(
-        cls.__table__,
-        'after_drop',
-        sa.schema.DDL(
-            f'DROP FUNCTION IF EXISTS {cls.__table__.name}_audit()',
-        ),
-    )
+    pass
 
 
 def sync_trigger(session, table_name, **kwargs):

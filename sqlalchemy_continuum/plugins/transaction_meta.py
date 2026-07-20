@@ -1,51 +1,3 @@
-"""
-TransactionMetaPlugin offers a way of saving key-value data for transactions.
-You can use the plugin in the same way as other plugins:
-
-```python
-meta_plugin = TransactionMetaPlugin()
-
-versioning_manager.plugins.append(meta_plugin)
-```
-
-TransactionMetaPlugin creates a simple model called TransactionMeta. This class
-has three columns: transaction_id, key and value. TransactionMeta plugin also
-creates an association proxy between TransactionMeta and Transaction classes
-for easy dictionary based access of key-value pairs.
-
-You can easily 'tag' transactions with certain key value pairs by giving these
-keys and values to the meta property of Transaction class.
-
-```python
-import sqlalchemy as sa
-
-from sqlalchemy_continuum import versioning_manager
-
-
-article = Article()
-session.add(article)
-
-uow = versioning_manager.unit_of_work(session)
-tx = uow.create_transaction(session)
-tx.meta = {'some_key': 'some value'}
-session.commit()
-
-TransactionMeta = meta_plugin.model_class
-Transaction = versioning_manager.transaction_cls
-
-# find all transactions with 'article' tags
-query = (
-    session.query(Transaction)
-    .join(Transaction.meta_relation)
-    .filter(
-        sa.and_(
-            TransactionMeta.key == 'some_key',
-            TransactionMeta.value == 'some value'
-        )
-    )
-)
-```
-"""
 
 import sqlalchemy as sa
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -65,38 +17,12 @@ class TransactionMetaFactory(ModelFactory):
     model_name = 'TransactionMeta'
 
     def create_class(self, manager):
-        """
-        Create TransactionMeta class.
-        """
-
-        class TransactionMeta(manager.declarative_base, TransactionMetaBase):
-            __tablename__ = 'transaction_meta'
-
-        TransactionMeta.transaction = sa.orm.relationship(
-            manager.transaction_cls,
-            backref=sa.orm.backref(
-                'meta_relation', collection_class=attribute_mapped_collection('key')
-            ),
-            primaryjoin=(
-                f'{manager.transaction_cls.__name__}.id == TransactionMeta.transaction_id'
-            ),
-            foreign_keys=[TransactionMeta.transaction_id],
-        )
-
-        manager.transaction_cls.meta = association_proxy(
-            'meta_relation',
-            'value',
-            creator=lambda key, value: TransactionMeta(key=key, value=value),
-        )
-
-        return TransactionMeta
+        pass
 
 
 class TransactionMetaPlugin(Plugin):
     def after_build_tx_class(self, manager):
-        self.model_class = TransactionMetaFactory()(manager)
-        manager.transaction_meta_cls = self.model_class
+        pass
 
     def after_build_models(self, manager):
-        self.model_class = TransactionMetaFactory()(manager)
-        manager.transaction_meta_cls = self.model_class
+        pass

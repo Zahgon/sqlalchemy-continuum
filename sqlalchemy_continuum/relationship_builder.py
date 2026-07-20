@@ -87,7 +87,6 @@ class RelationshipBuilder:
             reflector = VersionExpressionReflector(obj, self.property)
             criteria = reflector(self.property.primaryjoin)
 
-            # For many-to-many relationships, we also need to include the secondary join
             if (
                 direction.name == 'MANYTOMANY'
                 and self.property.secondaryjoin is not None
@@ -217,17 +216,7 @@ class RelationshipBuilder:
 
     @property
     def reflected_relationship(self):
-        """
-        Builds a reflected one-to-many, one-to-one and many-to-one
-        relationship between two version classes.
-        """
-
-        @property
-        def relationship(obj):
-            query = self.query(obj)
-            return self.process_query(query)
-
-        return relationship
+        pass
 
     def association_subquery(self, obj):
         """
@@ -307,30 +296,7 @@ class RelationshipBuilder:
         )
 
     def build_association_version_tables(self):
-        """
-        Builds many-to-many association version table for given property.
-        Association version tables are used for tracking change history of
-        many-to-many associations.
-        """
-        column = list(self.property.remote_side)[0]
-
-        self.manager.association_tables.add(column.table)
-        builder = TableBuilder(self.manager, column.table)
-        metadata = column.table.metadata
-        if builder.parent_table.schema:
-            table_name = builder.parent_table.schema + '.' + builder.table_name
-        elif metadata.schema:
-            table_name = metadata.schema + '.' + builder.table_name
-        else:
-            table_name = builder.table_name
-
-        if table_name not in metadata.tables:
-            self.association_version_table = table = builder()
-            self.manager.association_version_tables.add(table)
-        else:
-            # may have already been created if we visiting the 'other' side of
-            # a self-referential many-to-many relationship
-            self.association_version_table = metadata.tables[table_name]
+        pass
 
     def __call__(self):
         """
@@ -354,7 +320,6 @@ class RelationshipBuilder:
         ):
             self.build_association_version_tables()
 
-            # store remote cls to association table column pairs
             self.remote_to_association_column_pairs = []
             for column_pair in self.property.local_remote_pairs:
                 if column_pair[0] in self.property.target.c.values():

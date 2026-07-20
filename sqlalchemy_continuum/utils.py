@@ -51,11 +51,11 @@ def tx_column_name(obj):
 
 
 def end_tx_column_name(obj):
-    return option(obj, 'end_transaction_column_name')
+    pass
 
 
 def end_tx_attr(obj):
-    return getattr(obj.__class__, end_tx_column_name(obj))
+    pass
 
 
 def parent_class(version_cls):
@@ -91,13 +91,7 @@ def transaction_class(cls):
 
 
 def version_obj(session, parent_obj):
-    manager = get_versioning_manager(parent_obj)
-    uow = manager.unit_of_work(session)
-    for version_obj in uow.version_session:
-        if parent_class(version_obj.__class__) == parent_obj.__class__ and identity(
-            version_obj
-        )[:-1] == identity(parent_obj):
-            return version_obj
+    pass
 
 
 def version_class(model):
@@ -120,19 +114,7 @@ def version_class(model):
 
 
 def version_table(table):
-    """
-    Return associated version table for given SQLAlchemy Table object.
-
-    :param table: SQLAlchemy Table object
-    """
-    if table.schema:
-        return table.metadata.tables[table.schema + '.' + table.name + '_version']
-    elif table.metadata.schema:
-        return table.metadata.tables[
-            table.metadata.schema + '.' + table.name + '_version'
-        ]
-    else:
-        return table.metadata.tables[table.name + '_version']
+    pass
 
 
 def versioned_objects(session):
@@ -187,7 +169,6 @@ def versioned_column_properties(obj_or_class):
 
     mapper = sa.inspect(cls)
     for key, column in mapper.columns.items():
-        # Ignores non table columns
         if not is_table_column(column):
             continue
 
@@ -356,7 +337,6 @@ def count_versions(obj):
     """
     session = sa.orm.object_session(obj)
     if session is None:
-        # If object is transient, we assume it has no version history.
         return 0
     manager = get_versioning_manager(obj)
     table_name = manager.option(obj, 'table_name') % obj.__table__.name
@@ -408,9 +388,7 @@ def changeset(obj):
 
 class VersioningClauseAdapter(sa.sql.visitors.ReplacingCloningVisitor):
     def replace(self, col):
-        if isinstance(col, sa.Column):
-            table = version_table(col.table)
-            return table.c.get(col.key)
+        pass
 
 
 def adapt_columns(expr):

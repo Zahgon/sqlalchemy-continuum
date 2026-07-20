@@ -20,19 +20,12 @@ class Operation:
 
 
 class Operations:
-    """
-    A collection of operations
-    """
 
     def __init__(self):
-        # Operations must be processed in insertion order; plain dicts
-        # preserve it.
         self.objects = {}
 
     def format_key(self, target):
-        # We cannot use target._sa_instance_state.identity here since object's
-        # identity is not yet updated at this phase
-        return (target.__class__, identity(target))
+        pass
 
     def __contains__(self, target):
         return self.format_key(target) in self.objects
@@ -54,38 +47,19 @@ class Operations:
 
     @property
     def entities(self):
-        """
-        Return a set of changed versioned entities for given session.
-
-        :param session: SQLAlchemy session object
-        """
-        return {k[0] for k in self.objects}
+        pass
 
     def items(self):
         return self.objects.items()
 
     def add(self, operation):
-        self[self.format_key(operation.target)] = operation
+        pass
 
     def add_insert(self, target):
-        if target in self:
-            # If the object is deleted and then inserted within the same
-            # transaction we are actually dealing with an update.
-            self.add(Operation(target, Operation.UPDATE))
-        else:
-            self.add(Operation(target, Operation.INSERT))
+        pass
 
     def add_update(self, target):
-        state_copy = copy(sa.inspect(target).committed_state)
-        relationships = sa.inspect(target.__class__).relationships
-        # Remove all ONETOMANY and MANYTOMANY relationships
-        for rel_key, relationship in relationships.items():
-            if relationship.direction.name in ['ONETOMANY', 'MANYTOMANY']:
-                if rel_key in state_copy:
-                    del state_copy[rel_key]
-
-        if state_copy:
-            self.add(Operation(target, Operation.UPDATE))
+        pass
 
     def add_delete(self, target):
-        self.add(Operation(target, Operation.DELETE))
+        pass

@@ -24,7 +24,7 @@ class Plugin:
         pass
 
     def transaction_args(self, uow, session):
-        return {}
+        pass
 
     def after_version_class_built(self, parent_cls, version_cls):
         pass
@@ -63,7 +63,7 @@ class PluginCollection:
 
     def __getattr__(self, attr):
         def wrapper(*args, **kwargs):
-            return [getattr(plugin, attr)(*args, **kwargs) for plugin in self.plugins]
+            pass
 
         return wrapper
 
